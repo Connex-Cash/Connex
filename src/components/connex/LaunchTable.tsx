@@ -22,7 +22,7 @@ export function LaunchTable({ launches, ethUsd, now, limit }: { launches: Launch
   }
   return (
     <div className="tbl-wrap">
-      <table className="tbl min-w-[760px]">
+      <table className="tbl min-w-[860px]">
         <thead>
           <tr>
             <th>#</th>
@@ -41,7 +41,7 @@ export function LaunchTable({ launches, ethUsd, now, limit }: { launches: Launch
             return (
               <tr key={l.id}>
                 <td className="num text-ink-4">{l.mode === "sample" ? "s" : l.index + 1}</td>
-                <td>
+                <td className="min-w-[210px]">
                   <Link href={`/launches/${l.id}`} className="flex min-w-0 items-center gap-3 no-underline">
                     <TokenAvatar symbol={l.symbol} size={34} />
                     <span className="grid min-w-0">
