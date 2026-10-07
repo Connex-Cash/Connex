@@ -1,0 +1,15 @@
+# CONNEX agent keeper. Settings and API keys live in keeper.conf (never committed);
+# the agent wallet's key is keys/keeper.key, mounted read-only.
+services:
+  keeper:
+    build: .
+    image: connex-keeper
+    restart: unless-stopped
+    env_file: keeper.conf
+    environment:
+      KEEPER_KEY_FILE: /run/keeper/keeper.key
+    volumes:
+      - ./keys:/run/keeper:ro
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "3" }

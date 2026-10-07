@@ -1,0 +1,31 @@
+# Copy to keeper.conf on the server (it is git-ignored). Fill only what you use.
+KEEPER_ENABLED=
+# 1 = simulate every transaction, send nothing (default). Set 0 to go live.
+KEEPER_DRY_RUN=1
+KEEPER_RPC_URL=https://rpc.mainnet.chain.robinhood.com
+KEEPER_CHAIN_ID=4663
+LAUNCHER=
+TREASURY=
+SITE_URL=https://connex.cash
+# Paid services
+X_BEARER_TOKEN=
+OPENROUTER_API_KEY=
+TEXT_MODEL=openai/gpt-4.1-mini
+JUDGE_MODEL=openai/gpt-4.1-mini
+IMAGE_MODEL=google/gemini-2.5-flash-image
+PINATA_JWT=
+# Ceilings
+MODEL_MAX_IN_PER_M=1
+MODEL_MAX_OUT_PER_M=4
+KEEPER_PAID_CALLS_PER_HOUR=60
+ROUND_USD_CAP=0.5
+STEP_COOLDOWN_SEC=300
+BUYBACK_SLIPPAGE_BPS=150
+MIN_GAS_WEI=2000000000000000
+# Posting on X (off unless both are set)
+POSTING_ENABLED=
+X_USER_TOKEN=
+# Site log (the same Redis the site reads)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+CHAT_KEY_PREFIX=connex:

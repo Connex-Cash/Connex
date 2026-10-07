@@ -1,0 +1,29 @@
+# dependencies
+/node_modules
+/keeper/node_modules
+
+# next.js
+/.next/
+/.next-local/
+/out/
+/build
+
+# env files (never committed)
+.env*
+!.env.example
+
+# keeper secrets and local state (never committed)
+/keeper/keys/
+/keeper/keeper.conf
+/keeper/state/
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# local data written by the site in development
+.connex-data*.json

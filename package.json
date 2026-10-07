@@ -1,0 +1,35 @@
+{
+  "name": "connex",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 4950",
+    "build": "next build",
+    "start": "next start -p 4950",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --no-warnings --test src/lib/ratelimit-memory.test.ts src/lib/netkey.test.ts src/lib/onchain/connex.test.ts src/lib/onchain/deploy.test.ts src/lib/agent/sample.test.ts",
+    "bytecode": "node scripts/onchain-bytecode.mjs",
+    "verify-deployment": "node --no-warnings scripts/verify-deployment.mjs"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@phosphor-icons/react": "^2.1.10",
+    "@walletconnect/ethereum-provider": "^2.25.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "redis": "^6.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.5",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

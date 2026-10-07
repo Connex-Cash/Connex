@@ -1,0 +1,14 @@
+{
+  "name": "connex-keeper",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "The CONNEX agent: a launch round every 30 minutes and fee collection every 5 minutes on Robinhood Chain.",
+  "scripts": {
+    "start": "node src/main.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "viem": "2.38.0"
+  }
+}
