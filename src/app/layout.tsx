@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { JetBrains_Mono, Manrope, Pixelify_Sans, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import { BRAND, CHAIN, hasGithub, hasX } from "@/config/brand";
+import { Toaster } from "@/components/CopyCa";
 import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -9,12 +10,10 @@ import { WalletModalProvider } from "@/components/wallet/WalletButton";
 import { WalletProvider } from "@/components/wallet/WalletProvider";
 import { HOME_DESCRIPTION, HOME_TITLE, OG_IMAGE } from "@/lib/seo";
 
-const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
-const plex = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex", display: "swap" });
-const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono", display: "swap" });
-
-/** Applies a saved light/dark choice before first paint so the page never flashes the other theme. */
-const THEME_INIT = `try{var t=localStorage.getItem("connex-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+const manrope = Manrope({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-manrope", display: "swap" });
+const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-jbmono", display: "swap" });
+const pixel = Press_Start_2P({ subsets: ["latin"], weight: "400", variable: "--font-pressstart", display: "swap" });
+const pixel2 = Pixelify_Sans({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-pixelify", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(BRAND.url),
@@ -43,10 +42,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f0e8" },
-    { media: "(prefers-color-scheme: dark)", color: "#121110" },
-  ],
+  themeColor: "#05070f",
+  colorScheme: "dark",
   viewportFit: "cover",
 };
 
@@ -87,10 +84,7 @@ const ORG = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${archivo.variable} ${plex.variable} ${plexMono.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
-      </head>
+    <html lang="en" className={`${manrope.variable} ${mono.variable} ${pixel.variable} ${pixel2.variable}`}>
       <body className="overflow-x-hidden">
         <JsonLd data={ORG} />
         <WalletProvider>
@@ -98,6 +92,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <SiteHeader />
             {children}
             <SiteFooter />
+            <Toaster />
           </WalletModalProvider>
         </WalletProvider>
       </body>

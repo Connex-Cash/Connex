@@ -1,121 +1,157 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Check, Copy } from "@phosphor-icons/react";
-import { BRAND, CHAIN, TOKEN, explorerToken, shortAddress } from "@/config/brand";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { ArrowUpRight, Check, CopySimple } from "@phosphor-icons/react";
+import { BRAND, TOKEN, explorerToken, shortAddress } from "@/config/brand";
+
+/*
+ * The $CONNEX contract address control: a rounded pill with the ticker badge,
+ * the shortened address (full address in a tooltip on hover or focus), an
+ * explorer link and a round copy button. Copying raises a toast from the
+ * bottom of the screen. Until a real address is set in src/config/brand.ts
+ * the pill says so and the button stays disabled.
+ */
+
+/* ---- Toast: one per page, fed by a tiny store so any pill can raise it ---- */
+
+type Note = { id: number; text: string; detail?: string } | null;
+let current: Note = null;
+const subs = new Set<() => void>();
+let hideTimer: number | undefined;
+
+function announce(text: string, detail?: string) {
+  current = { id: Date.now(), text, detail };
+  subs.forEach((f) => f());
+  window.clearTimeout(hideTimer);
+  hideTimer = window.setTimeout(() => {
+    current = null;
+    subs.forEach((f) => f());
+  }, 2000);
+}
+
+const subscribe = (f: () => void) => {
+  subs.add(f);
+  return () => subs.delete(f);
+};
+
+/** Mounted once in the root layout. */
+export function Toaster() {
+  const note = useSyncExternalStore(
+    subscribe,
+    () => current,
+    () => null,
+  );
+  const [last, setLast] = useState<Note>(null);
+  if (note && note !== last) setLast(note);
+  return (
+    <div className={`toast ${note ? "show" : ""}`} role="status" aria-live="polite" data-testid="toast">
+      <span className="tk">
+        <Check size={15} weight="bold" />
+      </span>
+      <span>
+        {last?.text}
+        {last?.detail ? (
+          <>
+            {" "}
+            <code>{last.detail}</code>
+          </>
+        ) : null}
+      </span>
+    </div>
+  );
+}
+
+async function writeClipboard(value: string) {
+  try {
+    await navigator.clipboard.writeText(value);
+  } catch {
+    // Older browsers and some in-app views refuse the async clipboard.
+    const area = document.createElement("textarea");
+    area.value = value;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand("copy");
+    document.body.removeChild(area);
+  }
+}
 
 export function useCopyCa() {
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
-  // Until the contract is published there is nothing worth copying.
   const live = TOKEN.isLive;
   const copy = async () => {
     if (!live) return;
-    try {
-      await navigator.clipboard.writeText(BRAND.ca);
-    } catch {
-      // Older browsers and some embedded views refuse the async clipboard.
-      const area = document.createElement("textarea");
-      area.value = BRAND.ca;
-      document.body.appendChild(area);
-      area.select();
-      document.execCommand("copy");
-      document.body.removeChild(area);
-    }
+    await writeClipboard(BRAND.ca);
+    announce(`${BRAND.symbol} address copied`, shortAddress(BRAND.ca, 6, 4));
     setCopied(true);
     window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setCopied(false), 1600);
+    timer.current = window.setTimeout(() => setCopied(false), 2000);
   };
   return { copied, copy, live };
 }
 
-/**
- * Navbar copy chip: "$ASTRUE 0x12…abcd"; on phones a short "CA". One tap
- * copies the full address. Disabled ("at launch") until a real CA is set in
- * src/config/brand.ts.
- */
-export function CopyCaTag({ className = "" }: { className?: string }) {
+/** The pill. `size="sm"` for tight rows (footer on phones, spotlight). */
+export function CaPill({ size, id = "ca" }: { size?: "sm"; id?: string }) {
   const { copied, copy, live } = useCopyCa();
   return (
-    <button
-      type="button"
-      onClick={copy}
-      disabled={!live}
-      title={live ? `Copy ${BRAND.ca}` : "The contract address is published at launch"}
-      aria-label={live ? "Copy contract address" : "Contract address not published yet"}
-      data-testid="ca-tag"
-      className={`btn btn-sm num shrink-0 gap-1.5 font-normal disabled:opacity-100 disabled:cursor-default max-[560px]:px-2 ${className}`}
-    >
-      <span className="font-medium lg:hidden">CA</span>
-      <span className="hidden font-medium lg:inline">{BRAND.symbol}</span>
-      <span className="hidden text-ink-2 xl:inline">{!live ? "at launch" : copied ? "copied" : shortAddress(BRAND.ca, 4, 4)}</span>
-      {!live ? null : copied ? <Check size={12} className="text-go" weight="bold" /> : <Copy size={12} className="text-ink-2" />}
-    </button>
-  );
-}
-
-/** One line under the hero: "$ASTRUE 0x…(full) [copy]", wrapping on phones. */
-export function CopyCaInline({ className = "" }: { className?: string }) {
-  const { copied, copy, live } = useCopyCa();
-  return (
-    <div className={`ca ${className}`}>
-      <b>{BRAND.symbol}</b>
+    <span className={`capill ${size === "sm" ? "sm" : ""}`} data-testid={`${id}-pill`}>
+      <span className="tick">{BRAND.symbol}</span>
       {live ? (
-        <a href={explorerToken(BRAND.ca)} target="_blank" rel="noreferrer" data-testid="ca-inline">
-          {BRAND.ca}
-        </a>
+        <>
+          <a className="ad" href={explorerToken(BRAND.ca)} target="_blank" rel="noreferrer" data-testid={`${id}-addr`} aria-describedby={`${id}-tip`}>
+            {shortAddress(BRAND.ca, 6, 4)}
+          </a>
+          <span className="tip" id={`${id}-tip`} role="tooltip">
+            {BRAND.ca}
+          </span>
+          <a className="ex" href={explorerToken(BRAND.ca)} target="_blank" rel="noreferrer" aria-label="Open the contract on Blockscout">
+            <ArrowUpRight size={14} />
+          </a>
+        </>
       ) : (
-        <span className="addr" data-testid="ca-inline">
-          contract address coming soon
-        </span>
+        <>
+          <span className="ad wait" data-testid={`${id}-addr`}>
+            address at launch
+          </span>
+          <span className="tip" role="tooltip">
+            Published here on launch day. Trust no other address.
+          </span>
+        </>
       )}
-      <button type="button" onClick={copy} disabled={!live} aria-label={live ? "Copy contract address" : "Contract address not published yet"}>
-        {!live ? "at launch" : copied ? "copied" : "copy"}
-      </button>
-    </div>
-  );
-}
-
-/** Footer line: ticker, the whole address and a copy button. */
-export function CopyCaFoot() {
-  const { copied, copy, live } = useCopyCa();
-  return (
-    <span className="ca">
-      <b>{BRAND.symbol}</b>
-      {live ? (
-        <a href={explorerToken(BRAND.ca)} target="_blank" rel="noreferrer" data-testid="ca-foot">
-          {BRAND.ca}
-        </a>
-      ) : (
-        <span className="addr" data-testid="ca-foot">
-          address at launch
-        </span>
-      )}
-      <button type="button" onClick={copy} disabled={!live} aria-label={live ? "Copy contract address" : "Contract address not published yet"} data-testid="ca-copy">
-        {!live ? "soon" : copied ? "copied" : "copy"}
+      <button
+        type="button"
+        className={`cp ${copied ? "ok" : ""}`}
+        onClick={copy}
+        disabled={!live}
+        aria-label={live ? `Copy the ${BRAND.symbol} contract address` : "Contract address not published yet"}
+        data-testid={`${id}-copy`}
+      >
+        {copied ? <Check size={15} weight="bold" /> : <CopySimple size={15} />}
       </button>
     </span>
   );
 }
 
-/** Full contract block: chain, the whole address and a copy button. */
-export function CopyCaBlock({ className = "" }: { className?: string }) {
-  const { copied, copy, live } = useCopyCa();
+/** Copies any address (a launch's token) with the same toast. */
+export function CopyText({ value, label }: { value: string; label: string }) {
+  const [done, setDone] = useState(false);
   return (
-    <div className={`panel grid gap-2 p-4 ${className}`}>
-      <p className="m-0 text-[13px] text-ink-2">
-        {BRAND.symbol} contract on {CHAIN.name}
-      </p>
-      <div className="flex flex-wrap items-center gap-3">
-        <code className={`num min-w-0 flex-1 text-[13px] leading-snug ${live ? "break-all" : "break-words"}`} data-testid="ca-full">
-          {live ? BRAND.ca : "Published at launch. Only trust the address shown on this site."}
-        </code>
-        <button type="button" onClick={copy} disabled={!live} className="btn btn-sm shrink-0" data-testid="ca-copy">
-          {copied ? <Check size={13} weight="bold" /> : <Copy size={13} />}
-          {!live ? "Not live yet" : copied ? "Copied" : "Copy CA"}
-        </button>
-      </div>
-    </div>
+    <button
+      type="button"
+      className="cp-mini"
+      onClick={async () => {
+        await writeClipboard(value);
+        announce(`${label} copied`, shortAddress(value, 6, 4));
+        setDone(true);
+        window.setTimeout(() => setDone(false), 2000);
+      }}
+      aria-label={`Copy ${label}`}
+    >
+      {done ? <Check size={13} weight="bold" /> : <CopySimple size={13} />}
+    </button>
   );
 }

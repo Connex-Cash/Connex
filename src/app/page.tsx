@@ -1,311 +1,360 @@
 import Link from "next/link";
 import { requestNow } from "@/lib/now";
-import { CopyCaInline } from "@/components/CopyCa";
-import { LaunchTable } from "@/components/connex/LaunchTable";
-import { PairsTable } from "@/components/connex/Pairs";
+import { CaPill, CopyText } from "@/components/CopyCa";
+import { HeroScene } from "@/components/connex/HeroScene";
+import { LaunchTable } from "@/components/connex/LaunchList";
+import { devHoldsText, launchNo, laneText, mcapUsd, stageText } from "@/components/connex/launchView";
 import { PonsBoard } from "@/components/connex/PonsBoard";
-import { RoundHeader, StepList } from "@/components/connex/RoundView";
-import { FeeSplit, SampleBanner, TreasuryPanel } from "@/components/connex/Treasury";
-import { Mark } from "@/components/Mark";
+import { SplitPanel } from "@/components/connex/Treasury";
 import { NextRound } from "@/components/site/StatusStrip";
-import { ChainTag, SampleTag } from "@/components/ui";
-import { BRAND, CHAIN } from "@/config/brand";
-import { DEPLOY_DEFAULTS, launchesLive } from "@/config/contracts";
-import { currentRound, launchFeed, playbook } from "@/lib/agent/data";
-import { STEP_INFO, STEP_KEYS } from "@/lib/agent/types";
+import { BandHead, TokenArt, XGlyph } from "@/components/ui";
+import { BRAND, CHAIN, hasX } from "@/config/brand";
+import { DEPLOY_DEFAULTS, buybackLive } from "@/config/contracts";
+import { claims, launchFeed, playbook } from "@/lib/agent/data";
 import { chainStat } from "@/lib/chainstat";
-import { FAQ } from "@/lib/faq";
-import { ago } from "@/lib/format";
-import { readPairs, readPonsLatest, readTreasury } from "@/lib/onchain/read";
+import { ago, eth, usd } from "@/lib/format";
+import { readPonsLatest, readTreasury } from "@/lib/onchain/read";
 
 export const revalidate = 30;
 
+const pct = DEPLOY_DEFAULTS.buybackShareBps / 100;
+
 export default async function Home() {
   const now = requestNow();
-  const [round, feed, book, stat, pairs, treasury, coins] = await Promise.all([
-    currentRound(now),
+  const [feed, book, stat, treasury, coins, money] = await Promise.all([
     launchFeed(now),
     playbook(now),
     chainStat().catch(() => null),
-    readPairs().catch(() => []),
     readTreasury().catch(() => null),
-    readPonsLatest(10).catch(() => []),
+    readPonsLatest(6).catch(() => []),
+    claims(now),
   ]);
-  const stocks = pairs.filter((p) => p.kind === "stock" && p.approved);
+  const ethUsd = stat?.ethUsd ?? null;
+  const latest = feed.launches[0] ?? null;
+  const wall = feed.launches.slice(0, 13);
+  const sample = feed.mode === "sample";
+  const recent = money.claims.slice(-6).reverse();
 
   return (
     <main>
-      {/* Hero */}
-      <section className="border-b-2 border-ink">
-        <div className="wrap grid grid-cols-1 gap-10 py-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:py-16">
-          <div className="grid content-start gap-6">
-            <p className="m-0 flex items-center gap-2 font-mono text-[12.5px] text-ink-2">
-              <Mark size={16} /> AI launch agent on {CHAIN.name}
-            </p>
-            <h1 className="m-0 text-[clamp(52px,8.4vw,112px)] leading-[0.86] tracking-[-0.03em] [font-stretch:125%]">{BRAND.name}</h1>
-            <p className="m-0 font-display text-[clamp(24px,3.4vw,36px)] leading-[1.1] font-extrabold [font-stretch:110%]">
-              AI Launches.
-              <br />
-              Trends Convert.
-              <br />
-              <span className="text-signal-ink">Dev Holds Zero.</span>
-            </p>
-            <p className="lede m-0">{BRAND.tagline}</p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/round" className="btn btn-ink">
-                Watch the current round
+      <section className="hero" aria-label={BRAND.name}>
+        <HeroScene />
+        <div className="hero-in">
+          <h1>{BRAND.name}</h1>
+          <p className="sub">{BRAND.slogan}</p>
+          <div className="hero-acts">
+            <Link className="btn go" href="/round">
+              Live round
+            </Link>
+            {hasX ? (
+              <a className="btn" href={BRAND.x} target="_blank" rel="noreferrer">
+                <XGlyph size={16} />
+                {BRAND.xHandle}
+              </a>
+            ) : (
+              <Link className="btn" href="/docs">
+                How it works
               </Link>
-              <Link href="/docs" className="btn">
+            )}
+          </div>
+        </div>
+        <a className="cue" href="#mission">
+          Scroll
+          <i />
+        </a>
+      </section>
+
+      <section className="band" id="mission">
+        <div className="wrap mission">
+          <div>
+            <div className="kicker">AI launch agent on {CHAIN.name}</div>
+            <h2>Trending Topics, Turned Into Tokens</h2>
+            <p className="lede">
+              {BRAND.tagline} Fees are its whole income: <b>{pct}%</b> buys back {BRAND.symbol}, the other half funds the next launch.
+            </p>
+            <div className="facts">
+              <div>
+                <b>48</b>
+                <span>rounds every day</span>
+              </div>
+              <div>
+                <b>0</b>
+                <span>launch tokens the dev keeps</span>
+              </div>
+              <div>
+                <b>{pct}%</b>
+                <span>of fees buy {BRAND.symbol}</span>
+              </div>
+            </div>
+            <div className="ctas">
+              <Link className="btn go big" href="/round">
+                Follow the round
+              </Link>
+              <Link className="btn big" href="/docs">
                 How it works
               </Link>
             </div>
-            <CopyCaInline />
+            <div className="acts">
+              <CaPill id="ca-hero" />
+              {hasX ? (
+                <a className="btn" href={BRAND.x} target="_blank" rel="noreferrer">
+                  Launch posts on X
+                </a>
+              ) : null}
+            </div>
           </div>
-          <aside className="panel grid content-start gap-4 p-5" aria-label="Current round">
-            <RoundHeader round={round} />
-            <StepList round={round} compact />
-            <Link href="/round" className="tlink text-[14px]">
-              Read every step of this round
-            </Link>
-          </aside>
+          <div className="wall" aria-label="Launch history">
+            <div className="wall-h">
+              <span className="t">
+                <span className="blip" />
+                Launch history
+              </span>
+              <span className="t">
+                <span className="hide-sm">next round</span> <NextRound className="cd" />
+              </span>
+            </div>
+            <div className="tiles">
+              {wall.length ? (
+                wall.map((l, i) => {
+                  const mcap = mcapUsd(l, ethUsd);
+                  return (
+                    <Link key={l.id} className={`tile ${i === 0 ? "big" : ""}`} href={`/launches/${l.id}`} title={`${l.name} ($${l.symbol})`}>
+                      <TokenArt symbol={l.symbol} logo={null} className={i === 0 ? "text-[44px]" : "text-[15px]"} />
+                      {i === 0 ? <span className="chip lime newest">Newest</span> : null}
+                      {l.lane === "breaking" ? (
+                        <span className="chip brk lane">breaking</span>
+                      ) : l.pair.symbol !== "ETH" ? (
+                        <span className="chip stock lane">{l.pair.symbol}</span>
+                      ) : null}
+                      <span className="cap">
+                        <b>${l.symbol}</b>
+                        <span>{sample ? `≈${l.sampleFeesEth} ETH` : mcap ? usd(mcap) : stageText(l)}</span>
+                      </span>
+                    </Link>
+                  );
+                })
+              ) : (
+                <div className="empty" style={{ gridColumn: "1 / -1" }}>
+                  Logos land here after the first launch.
+                </div>
+              )}
+            </div>
+            <div className="wall-f">
+              <span>
+                {feed.launches.length} launches {sample ? "(sample)" : "so far"}
+              </span>
+              <Link href="/launches">See every launch</Link>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Rules strip */}
-      <section aria-label="The three rules" className="border-b border-line">
+      <section className="band" aria-labelledby="pons-h">
         <div className="wrap">
-        <dl className="m-0 grid grid-cols-1 sm:grid-cols-3">
-          {[
-            ["48", "rounds a day, one every 30 minutes"],
-            ["0", "tokens kept by the dev, checked per launch"],
-            [`${DEPLOY_DEFAULTS.buybackShareBps / 100} / ${100 - DEPLOY_DEFAULTS.buybackShareBps / 100}`, `fees split: ${BRAND.symbol} buyback / next launch`],
-          ].map(([k, v]) => (
-            <div key={v} className="border-line py-6 sm:border-r sm:px-6 sm:first:pl-0 sm:last:border-r-0">
-              <dt className="font-display text-[44px] leading-none font-extrabold [font-stretch:120%]">{k}</dt>
-              <dd className="m-0 mt-2 text-[14px] text-ink-2">{v}</dd>
-            </div>
-          ))}
-        </dl>
+          <BandHead kicker="On Pons right now" kickerColor="#ff9a5c" title="Coins Moving on Pons" id="pons-h">
+            The newest launches on the Pons launchpad, read from its factory a minute ago. They are not {BRAND.name} tokens: this is the crowd every new one has
+            to stand out in.
+          </BandHead>
+          <PonsBoard coins={coins} now={now} ethUsd={ethUsd} />
         </div>
       </section>
 
-      {/* Latest launches */}
-      <section className="sec" aria-labelledby="latest-h">
-        <div className="wrap grid gap-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="sec-h !mb-0">
-              <h2 id="latest-h">Every trend it launched, newest first</h2>
-              <p>
-                One row per token: what it is called, what it trades against, when it went out and whether anyone on the dev side holds a single unit of it.
-              </p>
+      <section className="band alt" aria-labelledby="latest-h">
+        <div className="wrap">
+          <BandHead
+            kicker="Latest launches"
+            title={`The Newest ${BRAND.name} Tokens`}
+            id="latest-h"
+            aside={
+              <Link className="more" href="/launches">
+                All launches
+              </Link>
+            }
+          />
+          {latest ? (
+            <div className="panel spot" data-testid="spotlight">
+              <TokenArt symbol={latest.symbol} />
+              <div style={{ minWidth: 0 }}>
+                <div className="faint mono" style={{ fontSize: 12.5 }}>
+                  Launch {launchNo(latest)} · {ago(latest.launchedAt, now)} ago · {laneText(latest).toLowerCase()}
+                  {sample ? " · sample" : ""}
+                </div>
+                <div className="nm" style={{ marginTop: 8 }}>
+                  {latest.name}
+                  <span>${latest.symbol}</span>
+                </div>
+                <p className="why">{latest.description}</p>
+                <div className="kv">
+                  <div>
+                    <div className="k">Market cap</div>
+                    <div className="v">{sample ? "–" : usd(mcapUsd(latest, ethUsd))}</div>
+                  </div>
+                  <div>
+                    <div className="k">Stage</div>
+                    <div className="v">{stageText(latest)}</div>
+                  </div>
+                  <div>
+                    <div className="k">Fees earned</div>
+                    <div className="v">{sample ? `≈${latest.sampleFeesEth}` : "–"}</div>
+                  </div>
+                  <div>
+                    <div className="k">Pair</div>
+                    <div className="v">{latest.pair.symbol}</div>
+                  </div>
+                  <div>
+                    <div className="k">Dev holds</div>
+                    <div className="v">{devHoldsText(latest).text}</div>
+                  </div>
+                </div>
+                <Link className="more" style={{ display: "inline-block", marginTop: 16 }} href={`/launches/${latest.id}`}>
+                  Read how the agent made it →
+                </Link>
+                <div className="addr-line">
+                  <span className="faint">CA</span>
+                  {latest.address ? (
+                    <>
+                      <code>{latest.address}</code>
+                      <CopyText value={latest.address} label={`$${latest.symbol} address`} />
+                    </>
+                  ) : (
+                    <code>no address: sample launch</code>
+                  )}
+                </div>
+              </div>
             </div>
-            <Link href="/launches" className="btn btn-sm">
-              All launches
-            </Link>
-          </div>
-          {feed.mode === "sample" ? (
-            <SampleBanner>
-              These launches are samples. The launcher contract is not deployed yet, so no CONNEX token exists. Real launches replace this list the moment the
-              contract records the first one.
-            </SampleBanner>
           ) : (
-            <p className="m-0 flex items-center gap-2 text-[13px] text-ink-2">
-              <ChainTag /> Read from the launcher contract and Pons.
-            </p>
+            <div className="panel spot">
+              <div className="empty">The first launch shows up here.</div>
+            </div>
           )}
-          <LaunchTable launches={feed.launches} ethUsd={stat?.ethUsd ?? null} now={now} limit={8} />
+          <div style={{ marginTop: 20 }}>
+            <LaunchTable launches={feed.launches} ethUsd={ethUsd} now={now} limit={6} />
+          </div>
         </div>
       </section>
 
-      {/* One round */}
-      <section className="sec" aria-labelledby="round-h">
-        <div className="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <div className="sec-h">
-            <h2 id="round-h">How one round turns a trending topic into a token</h2>
-            <p>
-              The clock decides when, the agent decides what. At :00 and :30 UTC a new round opens, and every step runs against its own stopwatch, so one slow model cannot
-              hold up the day. Most rounds finish in about eight minutes. The next one opens in <NextRound className="font-semibold text-ink" />.
-            </p>
-            <p>
-              A round is allowed to end with nothing. If no topic reaches 8 out of 10 with the skeptical trader, the agent writes down why and waits for the
-              next half hour. Filling the slot with a weak coin would only teach the playbook the wrong lesson.
-            </p>
-          </div>
-          <ol className="steps">
-            {STEP_KEYS.map((k, i) => (
-              <li key={k}>
-                <span className="n">{String(i + 1).padStart(2, "0")}</span>
-                <div>
-                  <h3>{STEP_INFO[k].title}</h3>
-                  <p>{STEP_INFO[k].plain}</p>
-                </div>
-                <span className="t">≤ {STEP_INFO[k].budgetMin} min</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* Dev holds zero */}
-      <section className="sec" aria-labelledby="zero-h">
-        <div className="wrap grid grid-cols-1 gap-10 lg:grid-cols-2">
-          <div className="sec-h">
-            <h2 id="zero-h">Dev holds zero, and the chain lets you check it</h2>
-            <p>
-              Plenty of launchers promise the dev holds nothing. {BRAND.name} moves that promise into code that anyone can read on Blockscout, then shows the
-              balance next to every token so you do not have to take the site&apos;s word for it either.
-            </p>
-          </div>
-          <div className="grid gap-5">
-            <div>
-              <h3 className="m-0 mb-2 text-[19px]">What the contracts guarantee</h3>
-              <ul className="m-0 grid gap-2 pl-5 text-[15px]">
-                <li>The launcher pays Pons its launch charge and nothing more: no opening buy, so the full supply starts on the bonding curve.</li>
-                <li>The launcher and the treasury have no function that buys, transfers or approves a launched token. Anything sent to them can only be burned.</li>
-                <li>Every launch names the treasury as its Pons fee recipient, with zero extra creator tax and Pons&apos; own buyback route switched off.</li>
+      <section className="band" aria-labelledby="money-h">
+        <div className="wrap">
+          <BandHead kicker="The money" title={`How ${BRAND.name} Gets Paid`} id="money-h">
+            Not one coin it launches stays with it. The only money it makes is the creator slice of trading fees, and the split below sits in a contract with no
+            owner, so the agent cannot touch it.
+          </BandHead>
+          <div className="money">
+            <SplitPanel state={treasury} ethUsd={ethUsd} />
+            <div className="panel pad">
+              <div className="band-h" style={{ marginBottom: 6 }}>
+                <h3>Claims and buybacks</h3>
+                <span className="faint mono" style={{ fontSize: 12 }}>
+                  {money.mode === "sample" ? "sample figures" : `${money.claims.length} claims`}
+                </span>
+              </div>
+              <ul className="bb">
+                {!buybackLive() ? (
+                  <li className="empty" style={{ display: "block" }}>
+                    No buybacks yet. They begin once {BRAND.symbol} trades, starting with everything saved until then.
+                  </li>
+                ) : null}
+                {recent.map((c) => (
+                  <li key={c.at}>
+                    <span>
+                      <span className="amt">{eth(c.ethWei)} ETH</span>
+                      <span className="faint"> claimed</span>
+                    </span>
+                    <span className="meta">
+                      {eth(c.toBuybackWei)} to buyback · {eth(c.toBudgetWei)} to launches
+                      <br />
+                      {ago(c.at, now)} ago
+                      {c.tx ? (
+                        <>
+                          {" · "}
+                          <a href={`${CHAIN.explorer}/tx/${c.tx}`} target="_blank" rel="noreferrer">
+                            tx
+                          </a>
+                        </>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
               </ul>
-            </div>
-            <div>
-              <h3 className="m-0 mb-2 text-[19px]">What they cannot guarantee</h3>
-              <p className="m-0 text-[15px] text-ink-2">
-                The agent signs launches from an ordinary hot wallet, and no contract can stop an ordinary wallet from buying on the open market. So the site
-                reads that wallet&apos;s balance of every launch, together with the launcher&apos;s and the treasury&apos;s, and prints the sum in the Dev holds column.
-                A number other than zero would show up there in red.
-              </p>
+              <Link className="more" style={{ display: "inline-block", marginTop: 12 }} href="/earnings">
+                Earnings and the treasury
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Money */}
-      <section className="sec" aria-labelledby="money-h">
-        <div className="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div className="grid content-start gap-6">
-            <div className="sec-h !mb-0">
-              <h2 id="money-h">Where the creator fees end up</h2>
+      <section className="band alt" aria-labelledby="loop-h">
+        <div className="wrap">
+          <BandHead
+            kicker="The loop"
+            title="The Fee Loop"
+            id="loop-h"
+            aside={
+              <Link className="more" href="/docs">
+                See the docs
+              </Link>
+            }
+          />
+          <ol className="flow">
+            <li>
+              <h3>A topic catches fire</h3>
+              <p>Every 30 minutes the agent reads X for posts spreading faster than usual.</p>
+            </li>
+            <li>
+              <h3>A skeptical trader votes</h3>
+              <p>Only a topic rated 8/10 or better as a buy gets a name and a logo.</p>
+            </li>
+            <li>
+              <h3>One token on Pons</h3>
+              <p>Sent through the {BRAND.name} launcher with ETH or a fitting stock pair. No opening buy, so the dev holds 0.</p>
+            </li>
+            <li>
+              <h3>Trades pay a fee</h3>
+              <p>Each buy and sell sends a creator slice to the treasury.</p>
+            </li>
+            <li>
+              <h3>The fee splits in two</h3>
               <p>
-                Pons skims a small fee from each trade and passes a slice of it to whoever created the token. For every {BRAND.name} launch the creator is
-                the treasury contract, and that share is the only money the agent ever earns.
+                {pct}% buys {BRAND.symbol} and burns it. The rest funds the next launch.
               </p>
-            </div>
-            <FeeSplit />
-            <p className="m-0 text-[15px]">
-              The buyback half buys {BRAND.symbol} on the market and sends it to the burn address. Until {BRAND.symbol} exists, that half is simply saved: the
-              contract cannot spend it on launches or anything else, so the very first buyback starts with everything collected so far. The launch half pays
-              the Pons launch fee for each new token plus a fixed {Number(DEPLOY_DEFAULTS.opsAllowanceWei) / 1e18} ETH towards the agent&apos;s gas and tools.
-              If it ever holds more than {Number(DEPLOY_DEFAULTS.budgetCeilingWei) / 1e18} ETH, the rest rolls over to the buyback side.
-            </p>
-            <p className="m-0 text-[15px] text-ink-2">
-              Buybacks come in small, spaced pieces: at most {Number(DEPLOY_DEFAULTS.maxBuybackPerCallWei) / 1e18} ETH at a time and no more than once an
-              hour, with a minimum price the agent checks first. A buy anyone could trigger with any price limit would be an open invitation to sandwich
-              bots. If the agent ever goes quiet for a week, anyone may run the same small buyback, so the saved ETH can never get stuck.
-            </p>
-            <Link href="/earnings" className="tlink text-[14px]">
-              Earnings, treasury and every split
-            </Link>
+            </li>
+          </ol>
+          <div className="loopline">
+            ↻ 05 loops back into 01: <b>each burned {BRAND.symbol} is paid for by the launches before it</b>
           </div>
-          <TreasuryPanel state={treasury} ethUsd={stat?.ethUsd ?? null} />
         </div>
       </section>
 
-      {/* Pairs */}
-      <section className="sec" aria-labelledby="pairs-h">
-        <div className="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-          <div className="sec-h">
-            <h2 id="pairs-h">ETH by default, a stock token when the company is the joke</h2>
-            <p>
-              On Pons, the quote asset of a token is picked once, at launch, and never changes. Pons keeps its own list of accepted pairs on chain; the table is read from that list
-              right now{stocks.length ? `, and it currently includes ${stocks.length} Robinhood stock tokens` : ""}.
-            </p>
-            <p>
-              The agent picks a stock only when a trader would get the pairing at a glance: a joke about graphics chips against NVDA, not a cat video against
-              anything. Stock tokens are matched by contract address, never by ticker, because the chain is full of lookalike tokens borrowing famous tickers.
-              Fees from a stock-paired launch arrive in that stock; the treasury splits them the same way and swaps each half to ETH on its own side.
-            </p>
-          </div>
-          <PairsTable pairs={pairs} />
-        </div>
-      </section>
-
-      {/* Playbook */}
-      <section className="sec" aria-labelledby="book-h">
-        <div className="wrap grid gap-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="sec-h !mb-0">
-              <h2 id="book-h">The playbook rewrites itself from results</h2>
-              <p>
-                The agent keeps a short playbook: scoring weights, naming rules, the image style and where it searches. After every round it lines up the results of past
-                launches and edits only what the data backs, writing down the change, the reason and the evidence.
-              </p>
-            </div>
-            <Link href="/playbook" className="btn btn-sm">
-              Full playbook
-            </Link>
-          </div>
-          {book.mode === "sample" ? <SampleBanner>The agent is not running yet, so these entries are examples of what it records.</SampleBanner> : null}
-          <ol className="steps">
-            {book.log.slice(0, 3).map((e) => (
+      <section className="band" aria-labelledby="learn-h">
+        <div className="wrap">
+          <BandHead
+            kicker="Learning loop"
+            title="What the Playbook Learned"
+            id="learn-h"
+            aside={
+              <Link className="more" href="/playbook">
+                Full playbook
+              </Link>
+            }
+          >
+            After each round it sets the results of earlier launches side by side and edits a rule only where the numbers agree.
+            {book.mode === "sample" ? " The entries below are examples until the agent runs." : ""}
+          </BandHead>
+          <ul className="feed">
+            {book.log.slice(0, 4).map((e) => (
               <li key={e.at}>
-                <span className="n">{ago(e.at, now)}</span>
+                <time>{ago(e.at, now)} ago</time>
                 <div>
-                  <h3>{e.title}</h3>
-                  <p>{e.change}</p>
-                  <p className="mt-1 font-mono text-[12.5px] text-ink-4">{e.evidence}</p>
+                  <b>{e.title}</b>
+                  <p className="why">
+                    {e.change} {e.reason}
+                  </p>
+                  <div className="ev">{e.evidence}</div>
                 </div>
-                <span className="t">{book.mode === "sample" ? <SampleTag /> : `v${book.version}`}</span>
               </li>
             ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* Pons market */}
-      <section className="sec" aria-labelledby="pons-h">
-        <div className="wrap grid gap-6">
-          <div className="sec-h !mb-0">
-            <h2 id="pons-h">The market every launch walks into</h2>
-            <p>
-              {BRAND.name} launches on Pons, the launchpad of {CHAIN.name}: a new token starts life on a bonding curve, then shifts into a Uniswap pool, liquidity locked, after
-              the curve is bought out. These are the launches trading there right now.
-            </p>
-          </div>
-          <PonsBoard coins={coins} now={now} ethUsd={stat?.ethUsd ?? null} />
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="sec" aria-labelledby="faq-h">
-        <div className="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
-          <div className="sec-h">
-            <h2 id="faq-h">Questions people ask about {BRAND.name}</h2>
-            <p>
-              Short answers here, the long ones in the <Link href="/docs" className="tlink">docs</Link>.
-            </p>
-          </div>
-          <div className="faq">
-            {FAQ.map((f) => (
-              <details key={f.q}>
-                <summary>{f.q}</summary>
-                <p>{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="wrap grid gap-5 py-16">
-        <h2 className="m-0 max-w-[18ch] text-[clamp(30px,5vw,52px)]">The next trend converts in <NextRound className="font-display" />.</h2>
-        <p className="lede m-0">
-          Follow the round as it happens, or read how the contracts keep the dev at zero. {launchesLive() ? "" : "Everything you see is a sample until the contracts are deployed."}
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/round" className="btn btn-signal">
-            Open the current round
-          </Link>
-          <Link href="/contracts" className="btn">
-            Read the contracts
-          </Link>
+          </ul>
         </div>
       </section>
     </main>

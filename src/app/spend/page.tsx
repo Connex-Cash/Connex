@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { requestNow } from "@/lib/now";
 import { JsonLd } from "@/components/JsonLd";
-import { MoneyTabs } from "@/components/connex/MoneyTabs";
-import { SampleBanner } from "@/components/connex/Treasury";
+import { BandHead } from "@/components/ui";
 import { BRAND } from "@/config/brand";
 import { DEPLOY_DEFAULTS } from "@/config/contracts";
 import { spend } from "@/lib/agent/data";
+import { chainStat } from "@/lib/chainstat";
+import { readTreasury } from "@/lib/onchain/read";
 import { breadcrumbs, pageMeta } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -16,82 +17,145 @@ export const metadata: Metadata = pageMeta({
   path: "/spend",
 });
 
+const money = (v: number) => `${v < 0 ? "−" : ""}$${Math.abs(v).toFixed(2)}`;
+
 export default async function SpendPage() {
   const now = requestNow();
-  const s = await spend(now);
+  const [s, treasury, stat] = await Promise.all([spend(now), readTreasury().catch(() => null), chainStat().catch(() => null)]);
   const tools = new Map<string, { kind: string; calls: number; usd: number }>();
-  for (const day of s.days) for (const it of day.items) {
-    const cur = tools.get(it.tool) ?? { kind: it.kind, calls: 0, usd: 0 };
-    tools.set(it.tool, { kind: it.kind, calls: cur.calls + it.calls, usd: cur.usd + it.usd });
-  }
+  for (const day of s.days)
+    for (const it of day.items) {
+      const cur = tools.get(it.tool) ?? { kind: it.kind, calls: 0, usd: 0 };
+      tools.set(it.tool, { kind: it.kind, calls: cur.calls + it.calls, usd: cur.usd + it.usd });
+    }
+  const ranked = [...tools.entries()].sort((a, b) => b[1].usd - a[1].usd);
+  const top = Math.max(0.01, ...ranked.map(([, t]) => t.usd));
   const totals = s.days.map((d) => ({ day: d.day, usd: d.items.reduce((a, i) => a + i.usd, 0) }));
   const week = totals.reduce((a, t) => a + t.usd, 0);
   const peak = Math.max(1, ...totals.map((t) => t.usd));
-  const rounds = 48 * 7;
+  const rounds = 48 * Math.max(1, totals.length);
+  const reimbursed = treasury && stat?.ethUsd ? (Number(treasury.opsPaid) / 1e18) * stat.ethUsd : 0;
+  const points = totals.map((t, i) => [totals.length > 1 ? (i / (totals.length - 1)) * 600 : 300, 190 - (t.usd / peak) * 175] as const);
+  const line = points.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join("");
+  const last = points[points.length - 1];
+
   return (
-    <main className="wrap">
+    <main>
       <JsonLd data={breadcrumbs([{ name: "Spend", path: "/spend" }])} />
-      <div className="page-h">
-        <h1>Spend</h1>
-        <p>Thinking costs money: every search, every model call and every logo is a paid request. This page counts them and shows the limits around them.</p>
-        <MoneyTabs on="spend" />
-      </div>
-      <div className="grid grid-cols-1 gap-10 pt-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-        <section aria-labelledby="days-h" className="grid content-start gap-5">
-          {s.mode === "sample" ? <SampleBanner>The agent is not running yet, so these are illustrative costs for a week of rounds.</SampleBanner> : null}
-          <h2 id="days-h" className="m-0 text-[26px]">
-            Last seven days: ${week.toFixed(2)}
-          </h2>
-          <ul className="m-0 grid list-none gap-2 p-0" aria-label="Spend per day">
-            {totals.map((t) => (
-              <li key={t.day} className="grid grid-cols-[92px_minmax(0,1fr)_64px] items-center gap-3 text-[13px]">
-                <span className="num text-ink-2">{t.day.slice(5)}</span>
-                <span className="meter">
-                  <i style={{ width: `${(t.usd / peak) * 100}%` }} />
-                </span>
-                <span className="num text-right">${t.usd.toFixed(2)}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="tbl-wrap">
-            <table className="tbl min-w-[520px]">
-              <thead>
-                <tr>
-                  <th>Model or tool</th>
-                  <th className="r">Calls</th>
-                  <th className="r">Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...tools.entries()].map(([name, t]) => (
-                  <tr key={name}>
-                    <td>
-                      {name} <span className="tag ml-1">{t.kind}</span>
-                    </td>
-                    <td className="num r">{t.calls.toLocaleString("en-US")}</td>
-                    <td className="num r">${t.usd.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <section className="band first">
+        <div className="wrap">
+          <BandHead kicker="Running costs" title="Does It Cover Its Own Costs?" h1>
+            Every search, model call and logo is a paid request. This page sets what the agent spends on thinking against what the treasury pays back from fees:
+            a fixed {Number(DEPLOY_DEFAULTS.opsAllowanceWei) / 1e18} ETH per launch.
+          </BandHead>
+          <div className="selffund">
+            <span className="sf-ic" aria-hidden="true">
+              <svg viewBox="0 0 16 16" width="22" height="22" shapeRendering="crispEdges">
+                <path fill="currentColor" d="M2 3h12v2H2zM2 7h8v2H2zM2 11h5v2H2zM11 9h3v5h-3zM12 7h1v2h-1z" />
+              </svg>
+            </span>
+            <div>
+              <b>Paid by the operator for now.</b> {s.mode === "sample" ? "The agent is not running yet, so the costs below are an illustrative week. " : ""}
+              The API accounts behind the agent are paid off chain. Once launches earn fees, the launch side of the treasury pays back a fixed amount per
+              launch, and only when it can cover it. The buyback side never pays for thinking.
+            </div>
           </div>
-          <p className="m-0 text-[14px] text-ink-2">Average per round at this rate: ${(week / rounds).toFixed(3)}.</p>
-        </section>
-        <aside className="doc grid content-start !text-[15px]">
-          <h2 className="!mt-0 !text-[24px]">The limits</h2>
-          <ul>
-            <li>Every model the agent may use must cost at most $1 per million input tokens and $4 per million output tokens. The price is checked when a model is configured and again before each run; if the catalogue cannot be read, the run does not happen.</li>
-            <li>A site-wide ceiling on paid calls per hour, retries included, set by the operator.</li>
-            <li>A spending cap per round: a round that hits it stops where it is.</li>
-            <li>A cooldown per step after a failure, so a broken API is not hammered.</li>
-          </ul>
-          <h3>Who pays</h3>
-          <p>
-            The tools are paid by the operator&apos;s API accounts, off chain. The treasury reimburses a fixed {Number(DEPLOY_DEFAULTS.opsAllowanceWei) / 1e18} ETH per
-            launch from the launch side, and only when that side can cover it. The buyback side never pays for thinking.
-          </p>
-        </aside>
-      </div>
+          <div className="stats">
+            <div className="stat">
+              <span className="lbl">Paid back from fees</span>
+              <span className="v">{money(reimbursed)}</span>
+              <span className="note">Launch side, all time</span>
+            </div>
+            <div className="stat">
+              <span className="lbl">Spent on tools</span>
+              <span className="v">{money(week)}</span>
+              <span className="note">Models and searches, last {totals.length} days</span>
+            </div>
+            <div className="stat">
+              <span className="lbl">Cost per round</span>
+              <span className="v">${(week / rounds).toFixed(3)}</span>
+              <span className="note">Reading to review</span>
+            </div>
+            <div className="stat">
+              <span className="lbl">Net</span>
+              <span className="v" style={{ color: reimbursed - week < 0 ? "var(--red)" : "var(--green)" }}>
+                {money(reimbursed - week)}
+              </span>
+              <span className="note">Paid back minus spent</span>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="band alt">
+        <div className="wrap cols2">
+          <div className="panel pad chart">
+            <h3>Daily spend</h3>
+            <div className="faint mono" style={{ fontSize: 13 }}>
+              {money(totals[totals.length - 1]?.usd ?? 0)} today{s.mode === "sample" ? " · sample" : ""}
+            </div>
+            <svg viewBox="0 0 600 200" preserveAspectRatio="none" aria-label="Dollars spent per day">
+              {[50, 100, 150].map((y) => (
+                <line key={y} x1="0" x2="600" y1={y} y2={y} stroke="rgba(140,165,255,.13)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              ))}
+              <defs>
+                <linearGradient id="spend-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#c6f24e" stopOpacity=".22" />
+                  <stop offset="1" stopColor="#c6f24e" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {points.length ? (
+                <>
+                  <path d={`${line}L600,200L0,200Z`} fill="url(#spend-fill)" />
+                  <path d={line} fill="none" stroke="#c6f24e" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                  <circle cx={last[0]} cy={last[1]} r="4" fill="#c6f24e" />
+                </>
+              ) : null}
+            </svg>
+            <div className="axis">
+              <span>{totals[0]?.day ?? ""}</span>
+              <span>{totals[totals.length - 1]?.day ?? ""}</span>
+            </div>
+          </div>
+          <div className="panel pad">
+            <h3 style={{ marginBottom: 6 }}>Models and tools</h3>
+            {ranked.map(([name, t]) => (
+              <div className="hb" key={name}>
+                <div className="hb-top">
+                  <span>
+                    {name}{" "}
+                    <span className="faint mono" style={{ fontSize: 11 }}>
+                      {t.kind} · {t.calls.toLocaleString("en-US")} calls
+                    </span>
+                  </span>
+                  <span className="num">{money(t.usd)}</span>
+                </div>
+                <span className="meter">
+                  <i style={{ width: `${(t.usd / top) * 100}%` }} />
+                </span>
+              </div>
+            ))}
+            <h3 style={{ margin: "18px 0 6px", fontSize: 16 }}>The limits</h3>
+            <ul className="blog" style={{ maxHeight: "none" }}>
+              <li>
+                <time>price</time>
+                <span>Every model must cost at most $1 per million input tokens and $4 per million output tokens, checked at setup and before each run.</span>
+              </li>
+              <li>
+                <time>hourly</time>
+                <span>A ceiling on paid calls per hour, retries included, set by the operator.</span>
+              </li>
+              <li>
+                <time>round</time>
+                <span>A spending cap per round: a round that reaches it stops where it is.</span>
+              </li>
+              <li>
+                <time>retry</time>
+                <span>A cooldown per step after a failure, so a broken API is not hammered.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

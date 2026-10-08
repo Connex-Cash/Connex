@@ -1,44 +1,68 @@
 import { Mark } from "@/components/Mark";
 import { BRAND } from "@/config/brand";
 
-/** Mark plus the expanded wordmark, as in the header. */
-export function Wordmark({ size = 22 }: { size?: number }) {
+/** Mark plus the pixel wordmark, as in the header. */
+export function Wordmark({ size = 30 }: { size?: number }) {
   return (
-    <span className="inline-flex items-center gap-2">
-      <Mark size={size} />
-      <b className="font-display text-[19px] font-extrabold tracking-[0.02em] [font-stretch:125%]">{BRAND.name}</b>
+    <span className="logo">
+      <Mark size={size} className="text-[var(--fg)]" />
+      {BRAND.name}
     </span>
   );
 }
 
-/** Dashed orange tag on anything that is sample data, not a real launch. */
+/** Dashed amber chip on anything that is sample data, not a real launch. */
 export function SampleTag({ className = "", children = "sample" }: { className?: string; children?: React.ReactNode }) {
-  return <span className={`tag tag-sample ${className}`}>{children}</span>;
+  return <span className={`chip smp ${className}`}>{children}</span>;
 }
 
-/** Green tag on anything read from the chain. */
+/** Green chip on anything read from the chain. */
 export function ChainTag({ className = "", children = "on chain" }: { className?: string; children?: React.ReactNode }) {
-  return <span className={`tag tag-live ${className}`}>{children}</span>;
+  return <span className={`chip good ${className}`}>{children}</span>;
 }
 
-const AVATAR_COLORS = ["#e8441a", "#17150f", "#1d6f45", "#2f4fa8", "#8a3ffc", "#b3300c", "#5b564b", "#0f766e"];
+/** Tile colours, taken from the site palette so every lettered logo sits in the same family. */
+const ART = [
+  ["#c6f24e", "#3d5a0a"],
+  ["#5ce1ff", "#0b4a5c"],
+  ["#ff4fd8", "#5c0b4c"],
+  ["#ffc24d", "#5c3d0b"],
+  ["#5ee08a", "#0b5c2a"],
+  ["#9cc0ff", "#1b2f6b"],
+  ["#ff9a5c", "#6b2c0b"],
+  ["#b9a4ff", "#2f1b6b"],
+] as const;
 
-/** A token's logo, or a lettered tile coloured from its ticker when there is none. */
-export function TokenAvatar({ symbol, logo, size = 32 }: { symbol: string; logo?: string | null; size?: number }) {
-  // Only logos the agent pinned (ipfs://<cid>) are shown, through a fixed gateway; any other URL in the log is ignored.
+/**
+ * A token's logo. Only logos the agent pinned (ipfs://<cid>) are shown, through
+ * a fixed gateway; anything else falls back to a lettered pixel tile coloured
+ * from the ticker.
+ */
+export function TokenArt({ symbol, logo, size, className = "" }: { symbol: string; logo?: string | null; size?: number; className?: string }) {
   const cid = /^ipfs:\/\/([A-Za-z0-9]{46,100})$/.exec(logo ?? "")?.[1];
-  const src = cid ? `https://ipfs.io/ipfs/${cid}` : null;
-  if (src) {
-    return <img src={src} alt={`${symbol} logo`} width={size} height={size} className="ava bg-paper-2 object-cover" style={{ width: size, height: size }} />;
+  const box = size ? { width: size, height: size } : undefined;
+  if (cid) {
+    return <img src={`https://ipfs.io/ipfs/${cid}`} alt={`${symbol} logo`} className={`art ${className}`} style={box} />;
   }
   let h = 0;
   for (const c of symbol) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  const bg = AVATAR_COLORS[h % AVATAR_COLORS.length];
+  const [bg, deep] = ART[h % ART.length];
+  const letters =
+    symbol
+      .replace(/[^A-Z0-9]/gi, "")
+      .slice(0, 2)
+      .toUpperCase() || "?";
+  const font = size ? Math.max(8, Math.round(size * 0.3)) : undefined;
   return (
-    <span className="ava" style={{ width: size, height: size, background: bg, fontSize: Math.max(9, size * 0.34) }} aria-hidden="true">
-      {symbol.replace(/[^A-Z0-9]/gi, "").slice(0, 2).toUpperCase()}
+    <span className={`art ${className}`} aria-hidden="true" style={{ ...box, fontSize: font, background: `linear-gradient(135deg, ${bg} 0 55%, ${deep} 55%)` }}>
+      {letters}
     </span>
   );
+}
+
+/** Kept for older call sites: same as TokenArt with a fixed size. */
+export function TokenAvatar({ symbol, logo, size = 32 }: { symbol: string; logo?: string | null; size?: number }) {
+  return <TokenArt symbol={symbol} logo={logo} size={size} className="rounded-[6px]" />;
 }
 
 export function XGlyph({ size = 16 }: { size?: number }) {
@@ -56,5 +80,41 @@ export function EthGlyph({ size = 14 }: { size?: number }) {
       <path d="M12 2.5 5.5 12.6 12 16.4l6.5-3.8L12 2.5Z" fill="currentColor" />
       <path d="M12 17.7 5.5 13.9 12 21.5l6.5-7.6-6.5 3.8Z" fill="currentColor" fillOpacity="0.55" />
     </svg>
+  );
+}
+
+/** Band heading: kicker, title, optional lede, and an optional element on the right. */
+export function BandHead({
+  kicker,
+  title,
+  children,
+  aside,
+  kickerColor,
+  id,
+  h1 = false,
+}: {
+  kicker: string;
+  title: React.ReactNode;
+  children?: React.ReactNode;
+  aside?: React.ReactNode;
+  kickerColor?: string;
+  id?: string;
+  /** The page title: rendered as h1 (styled like every band title). */
+  h1?: boolean;
+}) {
+  const H = h1 ? "h1" : "h2";
+  return (
+    <div className="band-h">
+      <div>
+        <div className="kicker" style={kickerColor ? { color: kickerColor } : undefined}>
+          {kicker}
+        </div>
+        <H id={id} className="title">
+          {title}
+        </H>
+        {children ? <p>{children}</p> : null}
+      </div>
+      {aside}
+    </div>
   );
 }

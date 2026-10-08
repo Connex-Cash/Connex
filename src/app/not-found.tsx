@@ -5,20 +5,26 @@ export const metadata: Metadata = { title: "Page not found", robots: { index: fa
 
 export default function NotFound() {
   return (
-    <main className="wrap-md py-16">
-      <div className="page-h">
-        <p className="m-0 font-mono text-[13px] text-ink-4">404</p>
-        <h1>This trend never converted</h1>
-        <p>Nothing lives at this address. The current round is still running.</p>
-      </div>
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link href="/round" className="btn btn-ink">
-          Current round
-        </Link>
-        <Link href="/" className="btn">
-          Home
-        </Link>
-      </div>
+    <main>
+      <section className="band first">
+        <div className="wrap narrow">
+          <div className="band-h">
+            <div>
+              <div className="kicker">404</div>
+              <h1 className="title">This Trend Never Converted</h1>
+              <p>Nothing lives at this address. The current round is still running.</p>
+            </div>
+          </div>
+          <div className="ctas">
+            <Link href="/round" className="btn go big">
+              Current round
+            </Link>
+            <Link href="/" className="btn big">
+              Home
+            </Link>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

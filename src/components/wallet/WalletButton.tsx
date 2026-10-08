@@ -69,9 +69,7 @@ function WalletDialog({ onClose }: { onClose: () => void }) {
     };
   }, [close]);
 
-  const installed = wallets
-    .filter((w) => w.rdns !== WALLETCONNECT_RDNS)
-    .sort((a, b) => Number(Boolean(a.unsupported)) - Number(Boolean(b.unsupported)));
+  const installed = wallets.filter((w) => w.rdns !== WALLETCONNECT_RDNS).sort((a, b) => Number(Boolean(a.unsupported)) - Number(Boolean(b.unsupported)));
   const walletConnect = wallets.find((w) => w.rdns === WALLETCONNECT_RDNS) ?? null;
   const detected = new Set(wallets.map((w) => w.rdns));
   const more = WALLET_CATALOG.filter((c) => !c.rdns.some((r) => detected.has(r)));
@@ -85,8 +83,8 @@ function WalletDialog({ onClose }: { onClose: () => void }) {
     if (ok) onClose();
   }
 
-  const row = "rounded-[6px] border border-line bg-card flex w-full items-center gap-3 px-3 py-2.5 text-left text-[14px] font-medium";
-  const heading = "px-1 pb-2 font-mono text-[12px] text-ink-3";
+  const row = "rounded-[12px] border border-line bg-[rgba(18,24,46,.62)] flex w-full items-center gap-3 px-3 py-2.5 text-left text-[14px] font-medium";
+  const heading = "px-1 pb-2 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3";
 
   // The header blurs what is behind it, and a backdrop filter turns it into
   // the containing block for fixed children. Rendered in place, the dialog
@@ -98,12 +96,12 @@ function WalletDialog({ onClose }: { onClose: () => void }) {
       aria-labelledby="wallet-dialog-title"
       className="fixed inset-0 z-[70] flex items-end justify-center md:items-center md:p-4"
     >
-      <div className="absolute inset-0 bg-ink/55" onClick={close} />
-      <div className="panel relative flex max-h-[92dvh] w-full max-w-[420px] flex-col overflow-hidden shadow-[0_8px_24px_#0000002e] max-md:rounded-b-none">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" onClick={close} />
+      <div className="panel wsheet relative flex max-h-[92dvh] w-full max-w-[420px] flex-col overflow-hidden max-md:rounded-b-none">
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <div className="flex items-center gap-2.5">
-            <Mark size={28} />
-            <h2 id="wallet-dialog-title" className="text-[17px] font-semibold">
+            <Mark size={28} className="text-ink" />
+            <h2 id="wallet-dialog-title" className="text-[17px] font-bold tracking-[-0.01em]">
               Connect a wallet
             </h2>
           </div>
@@ -113,8 +111,8 @@ function WalletDialog({ onClose }: { onClose: () => void }) {
         </div>
 
         <p className="px-5 text-[13px] leading-relaxed text-ink-2">
-          Any EVM wallet that can add a custom network works on {chain.name}. Connecting only shares your address; signatures and swaps are
-          asked for separately.
+          Any EVM wallet that can add a custom network works on {chain.name}. Connecting only shares your address; signatures and swaps are asked for
+          separately.
         </p>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-4 pb-2">
@@ -220,7 +218,8 @@ export function NavWallet({ compact = false }: { compact?: boolean }) {
   const { open } = useWalletModal();
   if (address) return <AccountMenu compact={compact} />;
   return (
-    <button type="button" onClick={open} className="btn btn-sm shrink-0">
+    <button type="button" onClick={open} className="btn shrink-0" data-testid="connect">
+      <Wallet size={16} className="ic-w max-[420px]:hidden" />
       Connect
     </button>
   );
@@ -285,9 +284,10 @@ function AccountMenu({ compact }: { compact: boolean }) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="btn btn-sm num shrink-0 font-normal"
+        className="wchip shrink-0"
+        data-testid="account-chip"
       >
-        <span className={`size-1.5 rounded-full ${onRobinhoodChain ? "bg-awake" : "bg-down"}`} />
+        <span className={`ld ${onRobinhoodChain ? "" : "off"}`} />
         <span className="sm:hidden">{shortAddress(address, 4, 3)}</span>
         <span className="hidden sm:inline">{shortAddress(address, compact ? 4 : 6, 4)}</span>
         {!compact && balance !== null ? <span className="hidden text-ink-2 lg:inline">{balance} ETH</span> : null}
@@ -300,9 +300,9 @@ function AccountMenu({ compact }: { compact: boolean }) {
               ref={menu}
               role="menu"
               style={{ position: "fixed", top: place.top, left: place.left }}
-              className="panel z-[80] w-[272px] overflow-hidden p-1.5 shadow-[0_8px_24px_#0000002e]"
+              className="panel wsheet z-[80] w-[272px] overflow-hidden p-1.5"
             >
-              <div className="rounded-[6px] border border-line bg-paper px-3.5 py-3">
+              <div className="rounded-[12px] border border-line bg-[rgba(5,7,15,.6)] px-3.5 py-3">
                 <p className="text-[12px] text-ink-3">{walletName ?? "Wallet"}</p>
                 <p className="num mt-1 text-[13px] text-ink">{shortAddress(address, 10, 8)}</p>
                 <p className="num mt-2 text-[15px] text-ink">{balance === null ? "…" : `${balance} ${chain.nativeSymbol}`}</p>
@@ -314,13 +314,7 @@ function AccountMenu({ compact }: { compact: boolean }) {
 
               {wrongNetwork ? (
                 <div className="px-1 pt-2">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={switching}
-                    onClick={switchNetwork}
-                    className="btn btn-ink btn-sm w-full"
-                  >
+                  <button type="button" role="menuitem" disabled={switching} onClick={switchNetwork} className="btn btn-ink btn-sm w-full">
                     {switching ? "Confirm in wallet…" : `Switch to ${chain.name}`}
                   </button>
                   {error ? <p className="mt-2 px-1 text-[12px] leading-relaxed text-down">{error}</p> : null}
@@ -404,12 +398,7 @@ export function AccessButton({ className = "" }: { className?: string }) {
 
   if (address && chainId !== null && !onRobinhoodChain) {
     return (
-      <button
-        type="button"
-        onClick={switchNetwork}
-        disabled={switching}
-        className={`btn btn-ink ${className}`}
-      >
+      <button type="button" onClick={switchNetwork} disabled={switching} className={`btn btn-ink ${className}`}>
         {switching ? "Confirm in wallet…" : `Switch to ${chain.name}`}
         <span aria-hidden="true">→</span>
       </button>
@@ -426,11 +415,7 @@ export function AccessButton({ className = "" }: { className?: string }) {
     );
   }
   return (
-    <button
-      type="button"
-      onClick={open}
-      className={`btn btn-ink ${className}`}
-    >
+    <button type="button" onClick={open} className={`btn btn-ink ${className}`}>
       Connect wallet
       <span aria-hidden="true">→</span>
     </button>

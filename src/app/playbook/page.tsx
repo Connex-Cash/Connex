@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { requestNow } from "@/lib/now";
 import { JsonLd } from "@/components/JsonLd";
-import { SampleBanner } from "@/components/connex/Treasury";
+import { BandHead } from "@/components/ui";
 import { BRAND } from "@/config/brand";
 import { playbook } from "@/lib/agent/data";
-import { utc } from "@/lib/format";
+import { ago } from "@/lib/format";
 import { breadcrumbs, pageMeta } from "@/lib/seo";
 
 export const revalidate = 120;
@@ -15,105 +15,72 @@ export const metadata: Metadata = pageMeta({
   path: "/playbook",
 });
 
+type Rule = { text: string; why: string; badge: string; fresh?: boolean };
+
 export default async function PlaybookPage() {
   const now = requestNow();
   const b = await playbook(now);
   const w = b.weights;
-  const weights = [
-    ["Momentum", w.momentum, "how fast the topic is spreading right now"],
-    ["Memeability", w.memeability, "how readily people riff on it and pass it along"],
-    ["Originality", w.originality, "how far it is from tokens that already exist"],
-    ["Trader appeal", w.appeal, "the skeptical trader's score, also a hard gate"],
-  ] as const;
+  const pc = (v: number) => `${Math.round(v * 100)}%`;
+  const rules: Rule[] = [
+    ...b.log.map((e) => ({
+      text: `${e.title}. ${e.change}`,
+      why: `${e.reason} ${e.evidence}`,
+      badge: `Changed ${ago(e.at, now)} ago`,
+      fresh: now - e.at < 12 * 3600_000,
+    })),
+    {
+      text: `Launch only what a trader would buy: a topic needs ${b.gate}/10 or more from the skeptical trader before anyone names or draws it.`,
+      why: "Fixed by the operator. The learning loop cannot lower it.",
+      badge: "Locked",
+    },
+    {
+      text: `Weigh topics ${pc(w.momentum)} on momentum, ${pc(w.memeability)} on meme value, ${pc(w.originality)} on freshness and ${pc(w.appeal)} on trader appeal.`,
+      why: "The weights always add up to 1. A review may move each by at most 0.1 per change, within 0.05 to 0.6.",
+      badge: `v${b.version}`,
+    },
+    ...b.rules.map((r) => ({ text: r, why: "Part of the current playbook; it stays until the numbers say otherwise.", badge: "Rule" })),
+    { text: `Naming: ${b.naming}`, why: "House style for names, tickers and the one-paragraph story.", badge: "Style" },
+    { text: `Logos: ${b.imageStyle}`, why: "Handed to the image model with every drawing request.", badge: "Style" },
+    {
+      text: `Look in: ${b.searches.join("; ")}.`,
+      why: "The searches are picked from a fixed allowlist; a review can reorder them but not invent new ones.",
+      badge: "Search",
+    },
+  ];
   return (
-    <main className="wrap">
+    <main>
       <JsonLd data={breadcrumbs([{ name: "Playbook", path: "/playbook" }])} />
-      <div className="page-h">
-        <h1>Playbook</h1>
-        <p>
-          What the agent believes about which trends convert. It rewrites these rules from its own results, one evidenced change at a time. Some things are
-          deliberately outside its reach: the safety rules, the 50/50 split and the contracts.
-        </p>
-      </div>
-      <div className="grid gap-10 pt-8">
-        {b.mode === "sample" ? <SampleBanner>The agent is not running yet: this is the starting playbook it ships with, and example log entries.</SampleBanner> : null}
-        <section aria-labelledby="w-h" className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <div className="grid content-start gap-4">
-            <h2 id="w-h" className="m-0 text-[26px]">
-              How a topic is scored
-            </h2>
-            <p className="m-0 text-ink-2">
-              Version {b.version}, updated {utc(b.updatedAt)}. A topic needs at least {b.gate}/10 from the skeptical trader before any of this matters.
-            </p>
-            <ul className="m-0 grid list-none gap-3 p-0">
-              {weights.map(([k, v, hint]) => (
-                <li key={k} className="grid gap-1">
-                  <div className="flex justify-between text-[14px]">
-                    <b>{k}</b>
-                    <span className="num">{Math.round(v * 100)}%</span>
-                  </div>
-                  <span className="meter">
-                    <i style={{ width: `${v * 100}%` }} />
-                  </span>
-                  <span className="text-[13px] text-ink-2">{hint}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="grid content-start gap-4">
-            <h2 className="m-0 text-[26px]">Rules it follows now</h2>
-            <ol className="m-0 grid gap-2 pl-5">
-              {b.rules.map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ol>
-            <dl className="rows">
-              <div>
-                <dt>Naming style</dt>
-                <dd className="!font-sans !text-left">{b.naming}</dd>
-              </div>
-              <div>
-                <dt>Image style</dt>
-                <dd className="!font-sans !text-left">{b.imageStyle}</dd>
-              </div>
-              <div>
-                <dt>Where it searches</dt>
-                <dd className="!font-sans !text-left">{b.searches.join("; ")}</dd>
-              </div>
-            </dl>
-          </div>
-        </section>
-        <section aria-labelledby="log-h" className="grid gap-4">
-          <h2 id="log-h" className="m-0 text-[26px]">
-            What it changed, and why
-          </h2>
-          <ol className="steps">
-            {b.log.map((e) => (
-              <li key={e.at}>
-                <span className="n">{new Date(e.at).toISOString().slice(5, 10)}</span>
-                <div>
-                  <h3>{e.title}</h3>
-                  <p>{e.change}</p>
-                  <p className="mt-1">{e.reason}</p>
-                  <p className="mt-1 font-mono text-[12.5px] text-ink-4">{e.evidence}</p>
-                </div>
-                <span className="t">{utc(e.at).split(", ")[1]}</span>
+      <section className="band first">
+        <div className="wrap narrow">
+          <BandHead
+            kicker="Learning loop"
+            title="The Playbook"
+            h1
+            aside={
+              <span className="chip">
+                <span className="blip" /> Reviewed {ago(b.updatedAt, now)} ago{b.mode === "sample" ? " · sample" : ""}
+              </span>
+            }
+          >
+            What the agent believes about which trends convert, right now. It edits these rules after rounds, one evidenced change at a time.
+            {b.mode === "sample" ? " The agent is not running yet: this is the starting playbook plus example changes." : ""}
+          </BandHead>
+          <ol className="rulelist">
+            {rules.map((r) => (
+              <li key={r.text} className={r.fresh ? "fresh" : ""}>
+                <span className="rt">{r.text}</span>
+                <span className={`badge ${r.fresh ? "new" : ""}`}>{r.badge}</span>
+                <span className="re">{r.why}</span>
               </li>
             ))}
           </ol>
-        </section>
-        <section aria-labelledby="fixed-h" className="doc">
-          <h2 id="fixed-h" className="!mt-0">
-            What the playbook can never change
-          </h2>
-          <ul>
-            <li>Never on the table: private individuals, minors, deaths and disasters, hateful, sexual or violent material, and any repeat of an earlier launch.</li>
-            <li>Names it never uses: its own name, a name or ticker it used before, real brands, real people, or anything imitating another project.</li>
-            <li>The fee split, the launch path and the treasury: those live in contracts with no owner.</li>
-            <li>The spending limits on models and tools.</li>
-          </ul>
-        </section>
-      </div>
+          <p className="faint" style={{ fontSize: 13.5, marginTop: 22 }}>
+            Out of the playbook&apos;s reach: the dev-holds-zero rule, the safety rules, the 50/50 fee split, the spending limits and the contracts. Any change
+            to wording waits for the owner&apos;s approval; the agent can only nudge weights and reorder searches on its own.
+          </p>
+        </div>
+      </section>
     </main>
   );
 }

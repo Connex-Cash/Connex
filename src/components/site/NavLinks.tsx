@@ -1,65 +1,83 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { List, X } from "@phosphor-icons/react";
-import { NAV, NAV_ALIASES } from "./nav";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { HOME_TAB, NAV_GROUPS, type NavItem } from "./nav";
 
-function useActive() {
+function useIsActive() {
   const path = usePathname() || "/";
-  return (href: string) => {
-    const base = "/" + (path.split("/")[1] ?? "");
-    return base === href || NAV_ALIASES[base] === href;
+  const params = useSearchParams();
+  const show = params?.get("show") ?? "";
+  return (item: NavItem) => {
+    const [p, q] = item.href.split("?");
+    if (p === "/") return path === "/";
+    if (q) return path === p && q === `show=${show}`;
+    if (p === "/launches") return (path === "/launches" && !show) || path.startsWith("/launches/");
+    return path === p;
   };
 }
 
-export function DesktopNav() {
-  const active = useActive();
+function Tabs() {
+  const isActive = useIsActive();
+  const path = usePathname();
+  const [open, setOpen] = useState<string | null>(null);
+  const root = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setOpen(null), 0);
+    return () => window.clearTimeout(t);
+  }, [path]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(null);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(null);
+    document.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
-      {NAV.map((n) => (
-        <Link
-          key={n.href}
-          href={n.href}
-          aria-current={active(n.href) ? "page" : undefined}
-          className={`rounded-[3px] px-2.5 py-1.5 text-[14px] font-medium no-underline transition-colors ${active(n.href) ? "bg-ink text-inkfg" : "text-ink-2 hover:text-ink"}`}
-        >
-          {n.label}
-        </Link>
-      ))}
+    <nav className="tabs" aria-label="Pages" ref={root}>
+      <Link href={HOME_TAB.href} aria-current={isActive(HOME_TAB) ? "page" : undefined}>
+        {HOME_TAB.label}
+      </Link>
+      {NAV_GROUPS.map((g) => {
+        const on = g.items.some(isActive);
+        const isOpen = open === g.label;
+        return (
+          <div key={g.label} className={`menu ${g.glow ? "lanes" : ""} ${on ? "on" : ""} ${isOpen ? "open" : ""}`}>
+            <button type="button" className={`menu-b ${g.glow ? "glow" : ""}`} aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : g.label)}>
+              {g.glow ? <span>{g.label}</span> : g.label}
+              <i aria-hidden="true">▾</i>
+            </button>
+            <div className="menu-m">
+              {g.items.map((it) => (
+                <Link key={it.href} href={it.href} aria-current={isActive(it) ? "page" : undefined} onClick={() => setOpen(null)}>
+                  {it.icon ? <em aria-hidden="true">{it.icon}</em> : null}
+                  {it.label}
+                  {it.fresh ? <b className="tagnew">new</b> : null}
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </nav>
   );
 }
 
-export function MobileNav() {
-  const path = usePathname() || "/";
-  const [openAt, setOpenAt] = useState<string | null>(null);
-  const open = openAt === path;
-  const setOpen = (fn: (v: boolean) => boolean) => setOpenAt(fn(open) ? path : null);
-  const active = useActive();
+/** Desktop: tabs in the bar. Phones: the same tabs fixed to the bottom, menus open upwards. */
+export function NavTabs() {
   return (
-    <div className="lg:hidden">
-      <button type="button" className="xlink" aria-expanded={open} aria-controls="mobile-nav" aria-label={open ? "Close menu" : "Open menu"} onClick={() => setOpen((v) => !v)}>
-        {open ? <X size={20} /> : <List size={20} />}
-      </button>
-      {open ? (
-        <nav id="mobile-nav" aria-label="Main" className="absolute inset-x-0 top-full z-40 border-b-2 border-ink bg-paper">
-          <ul className="wrap !mx-auto !my-0 grid list-none grid-cols-2 gap-x-4 py-3 sm:grid-cols-3">
-            {NAV.map((n) => (
-              <li key={n.href}>
-                <Link
-                  href={n.href}
-                  aria-current={active(n.href) ? "page" : undefined}
-                  className={`block border-b border-line py-2.5 font-display text-[18px] font-extrabold no-underline ${active(n.href) ? "text-signal-ink" : ""}`}
-                >
-                  {n.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      ) : null}
-    </div>
+    <Suspense fallback={<nav className="tabs" aria-label="Pages" />}>
+      <Tabs />
+    </Suspense>
   );
 }

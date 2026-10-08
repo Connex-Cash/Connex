@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function DeployPage() {
   return (
-    <main className="wrap-md grid gap-5 pb-16">
+    <main className="wrap-md grid gap-5 pb-16 pt-10">
       <DeployPanel />
     </main>
   );

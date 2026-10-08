@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/JsonLd";
+import { BandHead } from "@/components/ui";
 import { BRAND, CHAIN } from "@/config/brand";
 import { CONTRACTS, DEPLOY_DEFAULTS, EXTERNAL, OPERATOR } from "@/config/contracts";
 import { breadcrumbs, pageMeta } from "@/lib/seo";
@@ -55,7 +56,8 @@ const SPEC: {
     name: "ConnexLauncher",
     key: "launcher",
     when: "Deployable now; needs the treasury address.",
-    summary: "The only way the agent launches. Creates each token on Pons with no opening buy and the treasury as fee recipient, and can never move a launched token.",
+    summary:
+      "The only way the agent launches. Creates each token on Pons with no opening buy and the treasury as fee recipient, and can never move a launched token.",
     params: [
       ["Pons factory", `${EXTERNAL.ponsFactory.slice(0, 10)}…`],
       ["Treasury", CONTRACTS.treasury || "from step 1"],
@@ -86,87 +88,84 @@ const SPEC: {
 
 export default function ContractsPage() {
   return (
-    <main className="wrap">
+    <main>
       <JsonLd data={breadcrumbs([{ name: "Contracts", path: "/contracts" }])} />
-      <div className="page-h">
-        <h1>Contracts</h1>
-        <p>
-          Three small contracts carry the parts of {BRAND.name} that should not depend on trust. None has an owner, an admin key, a proxy or a fee setter;
-          every number below is fixed when the contract is deployed. Source code, tests and the deploy tool live in the project repository.
-        </p>
-      </div>
-      <div className="grid gap-12 pt-8">
-        <section aria-labelledby="order-h" className="grid gap-4">
-          <h2 id="order-h" className="m-0 text-[26px]">
-            Status and deploy order
-          </h2>
-          <ol className="steps">
+      <section className="band first">
+        <div className="wrap">
+          <BandHead kicker="On chain" title="Contracts" h1 aside={<span className="chip warn">{CONTRACTS.launcher ? "deployed" : "not deployed yet"}</span>}>
+            Three small contracts hold the parts of {BRAND.name} that should not rest on trust. None has an owner, an admin key, a proxy or a fee setter; every
+            number below is fixed at deployment. Source, tests and the deploy tool live in the project repository.
+          </BandHead>
+          <div className="summary">
             {[
               ["ConnexTreasury", CONTRACTS.treasury, "before the token"],
               ["ConnexLauncher", CONTRACTS.launcher, "before the token"],
-              ["treasury.wire(launcher)", "", "once, by the treasury deployer"],
+              ["treasury.wire(launcher)", "", "once, by the deployer"],
               ["ConnexBuyback", CONTRACTS.buyback, "after $CONNEX exists"],
-              ["treasury.setBuyback(buyback)", "", "once, by the treasury deployer"],
             ].map(([n, addr, when], i) => (
-              <li key={n}>
-                <span className="n">{String(i + 1).padStart(2, "0")}</span>
-                <div className="min-w-0">
-                  <h3 className="num !font-mono !text-[16px]">{n}</h3>
-                  <p className="num text-[13px] break-all">
-                    {addr ? (
-                      <a className="tlink" href={`${CHAIN.explorer}/address/${addr}`} target="_blank" rel="noreferrer">
-                        {addr}
-                      </a>
-                    ) : i === 2 || i === 4 ? (
-                      "wiring step"
-                    ) : (
-                      "not deployed yet"
-                    )}
-                  </p>
+              <div key={n} className={`sum ${addr ? "hl" : ""}`}>
+                <div className="k">
+                  Step {String(i + 1).padStart(2, "0")} · {when}
                 </div>
-                <span className="t">{when}</span>
-              </li>
+                <div className="v mono" style={{ fontSize: 15 }}>
+                  {n}
+                </div>
+                <div className="s">
+                  {addr ? (
+                    <a className="tlink num break-all" href={`${CHAIN.explorer}/address/${addr}`} target="_blank" rel="noreferrer">
+                      {addr}
+                    </a>
+                  ) : i === 2 ? (
+                    "wiring step"
+                  ) : (
+                    "not deployed yet"
+                  )}
+                </div>
+              </div>
             ))}
-          </ol>
-        </section>
-        {SPEC.map((c) => (
-          <section key={c.name} aria-labelledby={`${c.key}-h`} className="grid grid-cols-1 gap-8 border-t-2 border-ink pt-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          </div>
+        </div>
+      </section>
+      {SPEC.map((c, k) => (
+        <section key={c.name} className={`band ${k % 2 === 0 ? "alt" : ""}`} aria-labelledby={`${c.key}-h`}>
+          <div className="wrap cols2">
             <div className="grid content-start gap-3">
-              <h2 id={`${c.key}-h`} className="m-0 font-mono text-[24px] [font-stretch:100%]">
+              <div className="kicker">{CONTRACTS[c.key] ? "deployed" : "not deployed"}</div>
+              <h2 id={`${c.key}-h`} className="mono" style={{ fontSize: "clamp(24px, 3vw, 34px)" }}>
                 {c.name}
               </h2>
               <p className="m-0 text-ink-2">{c.summary}</p>
-              <p className="m-0 text-[13px]">
-                <span className="tag">{CONTRACTS[c.key] ? "deployed" : "not deployed"}</span> {c.when}
-              </p>
+              <p className="m-0 text-[13px] text-ink-3">{c.when}</p>
               <dl className="rows">
-                {c.params.map(([k, v]) => (
-                  <div key={k}>
-                    <dt>{k}</dt>
+                {c.params.map(([k2, v]) => (
+                  <div key={k2}>
+                    <dt>{k2}</dt>
                     <dd>{v}</dd>
                   </div>
                 ))}
               </dl>
             </div>
-            <div className="grid content-start gap-4">
-              <h3 className="m-0 text-[18px]">Functions</h3>
-              <dl className="rows">
-                {c.fns.map(([k, v]) => (
-                  <div key={k} className="!grid !justify-start">
-                    <dt className="font-mono !text-ink">{k}</dt>
-                    <dd className="!font-sans !text-left !text-ink-2">{v}</dd>
-                  </div>
+            <div className="panel pad grid content-start gap-4">
+              <h3>Functions</h3>
+              <ol className="rulelist" style={{ gap: 8 }}>
+                {c.fns.map(([k2, v]) => (
+                  <li key={k2} style={{ padding: "12px 14px" }}>
+                    <span className="rt mono" style={{ fontSize: 13.5, overflowWrap: "anywhere" }}>
+                      {k2}
+                    </span>
+                    <span className="re">{v}</span>
+                  </li>
                 ))}
-              </dl>
-              <h3 className="m-0 text-[18px]">Events</h3>
+              </ol>
+              <h3>Events</h3>
               <p className="m-0 font-mono text-[13px] text-ink-2">{c.events.join(" · ")}</p>
             </div>
-          </section>
-        ))}
-        <section aria-labelledby="verify-h" className="doc">
-          <h2 id="verify-h" className="!mt-0">
-            Verifying a deployment
-          </h2>
+          </div>
+        </section>
+      ))}
+      <section className="band">
+        <div className="wrap narrow doc">
+          <BandHead kicker="Check it yourself" title="Verifying a Deployment" />
           <ol>
             <li>
               Build the contracts (<code>forge build</code> in <code>contracts/</code>, solc 0.8.26, via-IR, optimizer 200 runs, EVM cancun).
@@ -175,14 +174,14 @@ export default function ContractsPage() {
               Run <code>npm run verify-deployment -- &lt;address&gt; &lt;deploy tx&gt;</code>: it checks the creation transaction, the runtime code and every
               constructor value against this build and exits with an error on any mismatch.
             </li>
-            <li>Match the source on Blockscout with the same compiler settings, then the explorer shows the code next to the address.</li>
+            <li>Match the source on Blockscout with the same compiler settings, so the explorer shows the code next to the address.</li>
           </ol>
           <p>
             The tests run against mocks and against a fork of {CHAIN.name} mainnet: real Pons launches through the launcher, real curve trades, fees swept into
             the treasury, a stock-paired launch whose NVDA fees are swapped to ETH on Uniswap, graduation, and buybacks on both the curve and the v4 pool.
           </p>
-        </section>
-      </div>
+        </div>
+      </section>
     </main>
   );
 }
