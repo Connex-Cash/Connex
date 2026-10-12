@@ -20,14 +20,14 @@ export const BRAND = {
   url: "https://connex.cash",
   slogan: "AI Launches. Trends Convert. Dev Holds Zero.",
   tagline:
-    "Every 30 minutes, AI launches a token from trending topics. Dev holds zero. Earns only from fees.",
+    "Every 30 minutes, AI launches a token from trending topics. The dev holds zero of every launch and earns only from its fees.",
   category: "AI launch agent",
   description:
     "CONNEX is an AI launch agent on Robinhood Chain. Every 30 minutes it turns a trending topic into a Pons token, holds none of it, and splits the creator fees 50/50.",
-  x: "https://x.com/connex",
-  xHandle: "@connex",
+  x: "https://x.com/connex_cash",
+  xHandle: "@connex_cash",
   // Public source repository. Kept off the site until the owner publishes it.
-  github: "",
+  github: "https://github.com/Connex-Cash/Connex",
   ca: CA,
 } as const;
 
@@ -68,6 +68,17 @@ export function serverRpc() {
     PUBLIC_RPC
   );
 }
+
+/**
+ * The team's only $CONNEX wallet, disclosed on /token and in the FAQ. "Dev holds zero" is the rule for
+ * every token the agent launches; $CONNEX is separate, and this is the team's whole position in it.
+ */
+export const TEAM = {
+  wallet: "0xa07412A8eEB56f20f14a25E6f68f068c6f848485",
+  /** First buy on the $CONNEX bonding curve at launch. */
+  launchBuyEth: "0.05",
+  launchBuyPct: "2.8",
+};
 
 export const TOKEN = {
   get isLive() {

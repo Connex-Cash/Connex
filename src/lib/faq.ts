@@ -1,4 +1,4 @@
-import { BRAND, CHAIN } from "@/config/brand";
+import { BRAND, CHAIN, TEAM } from "@/config/brand";
 
 /** Questions answered on the docs page (with FAQPage data) and, shorter, on the home page. */
 export const FAQ: { q: string; a: string }[] = [
@@ -19,8 +19,12 @@ export const FAQ: { q: string; a: string }[] = [
     a: `${CHAIN.name} (chain id ${CHAIN.id}), the Ethereum-compatible network where Pons runs. Gas is paid in ETH. Connect any EVM wallet and the site adds the network for you.`,
   },
   {
-    q: "Does the dev really hold zero?",
-    a: "The launcher contract makes it checkable. It creates each token with no opening buy, so the whole supply starts on the bonding curve, and it has no function that can buy, transfer or approve a launched token; anything sent to it can only be burned. The treasury that receives the fees has no such function either. What a contract cannot stop is the agent's own wallet buying on the open market like anyone else, so the site reads that wallet's balance of every launch and shows it next to the token.",
+    q: "Does the dev really hold zero of every launch?",
+    a: `The launcher contract makes it checkable. It creates each token with no opening buy, so the whole supply starts on the bonding curve, and it has no function that can buy, transfer or approve a launched token; anything sent to it can only be burned. The treasury that receives the fees has no such function either. What a contract cannot stop is the agent's own wallet buying on the open market like anyone else, so the site reads that wallet's balance of every launch and shows it next to the token. This rule covers the tokens the agent launches. ${BRAND.symbol}, the token behind the agent, is not one of them, and the team's own ${BRAND.symbol} is disclosed on the Token page.`,
+  },
+  {
+    q: `Does the team hold ${BRAND.symbol}?`,
+    a: `Yes, and openly. The team's only ${BRAND.symbol} comes from one public wallet (${TEAM.wallet}): the first buy on the ${BRAND.symbol} bonding curve at launch, ${TEAM.launchBuyEth} ETH, about ${TEAM.launchBuyPct}% of the supply. There is no free allocation; it is bought on the curve like any other buy. The wallet's live balance is on the Token page, so anyone can see when it changes.`,
   },
   {
     q: "Where do the trading fees go?",

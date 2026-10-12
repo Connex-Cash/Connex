@@ -205,7 +205,9 @@ export default async function DocsPage() {
                 <p>
                   The agent launches through the {BRAND.name} launcher contract, never directly. The launcher creates the token on the Pons factory with the
                   treasury as the creator fee recipient, zero extra creator tax and Pons&apos; own buyback route turned off, and it pays Pons its launch charge
-                  and nothing more. There is no opening buy, so the whole supply starts on the bonding curve.
+                  and nothing more. There is no opening buy, so the whole supply starts on the bonding curve. This is what &quot;dev holds zero&quot;
+                  means: it holds for every token the agent launches. {BRAND.symbol} is launched separately, and its team holding is listed on the{" "}
+                  <Link href="/token">Token</Link> page.
                 </p>
                 <p>
                   On Pons a new token is priced by a bonding curve: each purchase nudges the price up. Once every curve token is bought, the market shifts into

@@ -6,29 +6,36 @@ import { useEffect, useRef } from "react";
  * Hero backdrop: the CONNEX mark drawn as a pixel sprite, drifting down the
  * screen on five depth layers (small, dim and slow at the back; large and
  * bright up front), each one slowly turning. Now and then one of them
- * "converts": its lit node flashes and a ring spreads out. Canvas only.
+ * "converts": it flashes white and a ring spreads out. Canvas only.
  */
 
-// 13x13 sprite of the mark: two crossing strokes ending in four nodes.
-// N = node, S = stroke, H = stroke highlight, L = the lit node.
+// 19x19 sprite of the mark (19x11 artwork, padded square): two hexagonal links
+// hooked into each other, downsampled from the owner's logo.
+// N = body, H = lit edge, S = shaded edge.
 const SPRITE = [
-  ".NNN.....LLL.",
-  "NNNNN...LLLLL",
-  "NNNSS...SSLLL",
-  ".NSSHS.SHSSL.",
-  "...SSHSHSS...",
-  "....SSHSS....",
-  ".....SHS.....",
-  "....SSHSS....",
-  "...SSHSHSS...",
-  ".NSSHS.SHSSN.",
-  "NNNSS...SSNNN",
-  "NNNNN...NNNNN",
-  ".NNN.....NNN.",
+  "...................",
+  "...................",
+  "...................",
+  "...................",
+  "...HHHHHHS..HHHS...",
+  "..HNNNNNNS..HNNNS..",
+  "..HNSSSSNNHHSSSNS..",
+  ".HNS....SNNS...HNS.",
+  "HNNS.....HNS...SNNS",
+  "HNS....HHNSS....HNS",
+  "SNNS...HNS.....HNNS",
+  ".SNS...HNNS....HNS.",
+  "..HNHHHSSNNHHHHNS..",
+  "..SNNNS..HNNNNNNS..",
+  "...SSSS..SSSSSSS...",
+  "...................",
+  "...................",
+  "...................",
+  "...................",
 ];
 
-const PALETTE: Record<string, string> = { N: "#c6f24e", S: "#8fbf2a", H: "#e4ff9a", L: "#ff6a3d" };
-const FLASH: Record<string, string> = { ...PALETTE, L: "#ffffff", N: "#e4ff9a" };
+const PALETTE: Record<string, string> = { N: "#d1ff54", H: "#ecffad", S: "#8fbf2a" };
+const FLASH: Record<string, string> = { N: "#f2ffd0", H: "#ffffff", S: "#d1ff54" };
 
 function paint(rows: string[], px: number, colors: Record<string, string>) {
   const c = document.createElement("canvas");

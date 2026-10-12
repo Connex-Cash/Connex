@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ChainTag } from "@/components/ui";
 import { BRAND, CHAIN, TOKEN } from "@/config/brand";
 import { CONTRACTS, DEPLOY_DEFAULTS, launchesLive } from "@/config/contracts";
@@ -48,8 +49,10 @@ export function SplitPanel({ state, ethUsd }: { state: TreasuryState | null; eth
         <li>
           <span className="ic">02</span>
           <div>
-            <b>Dev holds zero</b>
-            <span className="d">No opening buy, and the contracts cannot hold a launched token.</span>
+            <b>Dev holds zero of every launch</b>
+            <span className="d">
+              No opening buy, and the contracts cannot hold a launched token. {BRAND.symbol} is separate: see <Link href="/token">Token</Link>.
+            </span>
           </div>
           <span className="p">0 tokens</span>
         </li>

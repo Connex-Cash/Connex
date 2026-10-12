@@ -16,11 +16,11 @@
  */
 
 export const CONTRACTS = {
-  treasury: "",
-  launcher: "",
+  treasury: "0xad37ba6adbe9a6ed062e183ad78eab5621912681",
+  launcher: "0x41ee80b6a2b37afa0347d0e6281a5c467cda45a9",
   buyback: "",
   /** Block the launcher was deployed in: the earliest block worth scanning for its events. */
-  launcherBlock: 0,
+  launcherBlock: 83988996,
 } as const;
 
 /**
@@ -29,7 +29,7 @@ export const CONTRACTS = {
  * so it must be known before step 1. Empty until the owner creates it
  * (keeper/make-key.mjs prints the address; the key never leaves the keeper).
  */
-export const OPERATOR = "";
+export const OPERATOR = "0x46ce33e5F6DEcC0F9e36333fE475ca4b3bA33399";
 
 /** Constructor values used by /deploy (owner can change them there before deploying). */
 export const DEPLOY_DEFAULTS = {

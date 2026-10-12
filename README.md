@@ -1,6 +1,6 @@
 # CONNEX — Every 30 minutes, AI launches a token from trending topics. Dev holds zero. Earns only from fees.
 
-**AI Launches. Trends Convert. Dev Holds Zero.** CONNEX is an AI launch agent on Robinhood Chain. Website: https://connex.cash · X: https://x.com/connex
+**AI Launches. Trends Convert. Dev Holds Zero.** CONNEX is an AI launch agent on Robinhood Chain. Website: https://connex.cash · X: https://x.com/connex_cash
 
 ## The problem
 

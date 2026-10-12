@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChainTrade } from "@/components/ChainTrade";
 import { CaPill } from "@/components/CopyCa";
+import { TeamHolding } from "@/components/connex/TeamHolding";
 import { BandHead } from "@/components/ui";
 import { JsonLd } from "@/components/JsonLd";
 import { BRAND, CHAIN, PONS, TOKEN, explorerToken, isAddress } from "@/config/brand";
@@ -26,8 +27,9 @@ export default function TokenPage() {
             h1
             aside={<span className={`chip ${TOKEN.isLive ? "good" : "warn"}`}>{TOKEN.isLive ? "live on Pons" : "not launched yet"}</span>}
           >
-            {BRAND.symbol} is the token behind the agent and never one of its launches. Half of every creator fee those launches earn buys {BRAND.symbol} on the
-            market and burns it.
+            {BRAND.symbol} is the token behind the agent, separate from its launches. &quot;Dev holds zero&quot; is the rule for every token the agent
+            launches; for {BRAND.symbol} itself, the team holds a small stake and shows it below. Half of every creator fee those launches earn buys{" "}
+            {BRAND.symbol} on the market and burns it.
           </BandHead>
           <div className="cols2">
             <div className="grid content-start gap-5">
@@ -54,6 +56,7 @@ export default function TokenPage() {
                   </p>
                 ) : null}
               </div>
+              <TeamHolding />
               <div className="panel pad doc">
                 <h3 style={{ fontSize: 20 }}>What backs the buyback</h3>
                 <p>

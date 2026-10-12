@@ -307,7 +307,7 @@ export default async function Home() {
             </li>
             <li>
               <h3>One token on Pons</h3>
-              <p>Sent through the {BRAND.name} launcher with ETH or a fitting stock pair. No opening buy, so the dev holds 0.</p>
+              <p>Sent through the {BRAND.name} launcher with ETH or a fitting stock pair. No opening buy, so the dev holds 0 of the new token.</p>
             </li>
             <li>
               <h3>Trades pay a fee</h3>
